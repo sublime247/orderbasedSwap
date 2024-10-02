@@ -24,7 +24,7 @@ contract OrderBasedSwap {
     ) external {
         require(msg.sender != address(0), "Zero Address detected");
         require(_amount > 0, "Amount needs to be more than zero");
-        uint256 _orderId = orderId+1;
+        uint256 _orderId = orderId + 1;
         Order storage _order = order[_orderId];
         require(!_order.userDeposited, "You deposited Already");
         _order.makerToken = _makerToken;
@@ -47,38 +47,36 @@ contract OrderBasedSwap {
             _amount
         );
         _order.userDeposited = true;
-        balances[msg.sender] = _amount;
 
-        orderId+=1;
+        balances[msg.sender] += _amount; // Accumulate deposits
+
+        orderId += 1;
     }
 
-
-        function swapOrder(uint256 _orderId) external {
-         require(msg.sender != address(0), "Zero Address detected");
+    function swapOrder(uint256 _orderId) external {
+        require(msg.sender != address(0), "Zero Address detected");
         Order storage _order = order[_orderId];
         require(_order.userDeposited, "you have no token deposited");
 
-        require(IERC20(_order.takerToken).balanceOf(msg.sender)>=_order.takerAmt, "Insufficient taker token balance");
-        require(IERC20(_order.takerToken).allowance(msg.sender, address(this))>=_order.takerAmt, "Allow to transfer sufficent Amount");
+        // Ensure the taker has enough balance and allowance for the swap
+        require(
+            IERC20(_order.takerToken).balanceOf(msg.sender) >= _order.takerAmt,
+            "Insufficient taker token balance"
+        );
+        require(
+            IERC20(_order.takerToken).allowance(msg.sender, address(this)) >=
+                _order.takerAmt,
+            "Allow to transfer sufficient Amount"
+        );
 
-        
-        IERC20(_order.takerToken).transferFrom(msg.sender, _order.creator, _order.takerAmt);
+        // Transfer taker tokens to the creator
+        IERC20(_order.takerToken).transferFrom(
+            msg.sender,
+            _order.creator,
+            _order.takerAmt
+        );
+
+        // Transfer maker tokens to the taker
         IERC20(_order.makerToken).transfer(msg.sender, _order.makerAmt);
-
-
-          
-            
-
-        }
-
-
-
-
-
-    // function withdraw() external {
-    //     require(msg.sender != address(0), "Zero Address detected");
-    //     Order storage _order = order[];
-    //     require(_order.userDeposited, "No tokens to withdraw");
-    //     IERC20(_order.takerToken).transfer(msg.sender, _order.takerAmt);
-    // }
+    }
 }
